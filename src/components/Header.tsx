@@ -118,8 +118,8 @@ export default function Header({ pages, activePageId, onSwitchPage, onAddPage, o
   }
 
   return (
-    <header className="bg-slate-900 text-white px-6 py-3 flex justify-between items-center shadow-md">
-      <div className="flex items-center gap-3">
+    <header className="flex flex-col gap-2 overflow-hidden bg-slate-900 px-4 py-2 text-white shadow-md sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:gap-4 lg:py-3">
+      <div className="flex min-w-0 w-full items-center gap-3 overflow-x-auto pb-1 lg:w-auto lg:overflow-visible lg:pb-0">
         <h1 className="text-lg font-bold tracking-wide text-blue-400">
           Infographic<span className="text-white">Studio</span>
         </h1>

@@ -208,7 +208,7 @@ export default function StyleEditor({ selectedObject, onUpdateSelected, onApplyI
   };
 
   return (
-    <aside className="w-64 bg-white border-l border-slate-200 p-4 flex flex-col gap-4">
+    <aside className="hidden w-64 bg-white border-l border-slate-200 p-4 xl:flex flex-col gap-4">
       <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
         Inspector Properties
       </h3>

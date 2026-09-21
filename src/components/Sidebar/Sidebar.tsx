@@ -132,7 +132,7 @@ export default function Sidebar({
   ];
 
   return (
-    <div className="flex h-full border-r border-slate-200 bg-white">
+    <div className="hidden h-full border-r border-slate-200 bg-white xl:flex">
       {/* Tool Icons Rail */}
       <nav className="w-16 border-r border-slate-200 flex flex-col items-center py-4 gap-4 bg-slate-900 text-slate-400">
         {tools.map((tool) => {
