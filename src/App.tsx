@@ -20,8 +20,7 @@ interface EditorPage {
   thumbnail?: string;
 }
 
-export default function App() {
-  const [showLanding, setShowLanding] = useState(() => !window.location.hash.startsWith('#share='));
+function EditorApp() {
   const [activeTool, setActiveTool] = useState<ActiveTool>('select');
   const [projectTitle, setProjectTitle] = useState('Untitled infographic');
   const [saveStatus, setSaveStatus] = useState('Autosave ready');
@@ -123,10 +122,6 @@ export default function App() {
     togglePointEditing,
     clipSelectedImageToShape,
   } = useFabric(600, 800);
-
-  if (showLanding && !sharedView) {
-    return <LandingPage onEnter={() => setShowLanding(false)} />;
-  }
 
   useEffect(() => {
     if (!fabricCanvas || !projectRestored) return;
@@ -598,4 +593,10 @@ export default function App() {
       <VersionHistory open={historyOpen && !sharedView} revisions={revisions} onClose={() => setHistoryOpen(false)} onRestore={(revision) => { void restoreRevision(revision); }} />
     </div>
   );
+}
+
+export default function App() {
+  const [showLanding, setShowLanding] = useState(() => !window.location.hash.startsWith('#share='));
+  if (showLanding) return <LandingPage onEnter={() => setShowLanding(false)} />;
+  return <EditorApp />;
 }
