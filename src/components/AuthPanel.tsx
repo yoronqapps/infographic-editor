@@ -5,7 +5,11 @@ import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 type AuthMode = 'signin' | 'signup';
 
-export default function AuthPanel() {
+interface AuthPanelProps {
+  compact?: boolean;
+}
+
+export default function AuthPanel({ compact = false }: AuthPanelProps) {
   const [user, setUser] = useState<User | null>(null);
   const [mode, setMode] = useState<AuthMode>('signin');
   const [email, setEmail] = useState('');
@@ -85,6 +89,7 @@ export default function AuthPanel() {
   };
 
   if (!isSupabaseConfigured) {
+    if (compact) return <span title="Authentication is not configured" className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-500/30 text-amber-200"><UserCircle2 className="h-5 w-5" /></span>;
     return (
       <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[10px] text-amber-100">
         Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.local to enable auth.
@@ -93,6 +98,16 @@ export default function AuthPanel() {
   }
 
   if (user) {
+    if (compact) {
+      return <details className="relative">
+        <summary title="Profile settings" className="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-xl border border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700"><UserCircle2 className="h-5 w-5" /></summary>
+        <div className="absolute bottom-12 left-0 z-50 w-56 rounded-xl border border-slate-700 bg-slate-900 p-3 text-white shadow-2xl">
+          <p className="truncate text-xs font-semibold">{user.email ?? 'Signed in'}</p>
+          <p className="mt-1 text-[10px] text-slate-400">Your account</p>
+          <button type="button" onClick={handleSignOut} className="mt-3 flex w-full items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-xs hover:bg-slate-800"><LogOut className="h-3.5 w-3.5" /> Sign out</button>
+        </div>
+      </details>;
+    }
     return (
       <div className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5">
         <UserCircle2 className="h-4 w-4 text-blue-300" />
@@ -107,6 +122,22 @@ export default function AuthPanel() {
         </button>
       </div>
     );
+  }
+
+  if (compact) {
+    return <details className="relative">
+      <summary title="Sign in or create account" className="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-xl border border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700"><UserCircle2 className="h-5 w-5" /></summary>
+      <div className="absolute bottom-12 left-0 z-50 w-64 rounded-xl border border-slate-700 bg-slate-900 p-3 text-white shadow-2xl">
+        <p className="mb-3 text-xs font-semibold">Sign in to your studio</p>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+          <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email" className="rounded border border-slate-700 bg-slate-800 px-2 py-2 text-xs text-white outline-none focus:border-blue-400" />
+          <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Password" className="rounded border border-slate-700 bg-slate-800 px-2 py-2 text-xs text-white outline-none focus:border-blue-400" />
+          <button type="submit" className="rounded bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500">{mode === 'signin' ? 'Sign in' : 'Create account'}</button>
+        </form>
+        <button type="button" onClick={() => setMode((current) => current === 'signin' ? 'signup' : 'signin')} className="mt-2 text-[10px] text-slate-300 hover:text-white">{mode === 'signin' ? 'Need an account?' : 'Back to sign in'}</button>
+        {status && <p className="mt-2 text-[10px] leading-4 text-slate-300">{status}</p>}
+      </div>
+    </details>;
   }
 
   return (

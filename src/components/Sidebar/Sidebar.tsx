@@ -6,6 +6,7 @@ import TextPanel from './TextPanel';
 import ShapePanel from './ShapePanel';
 import ImagePanel from './ImagePanel';
 import TemplatePanel from './TemplatePanel';
+import AuthPanel from '../AuthPanel';
 
 interface SidebarProps {
   activeTool: ActiveTool;
@@ -134,7 +135,7 @@ export default function Sidebar({
   return (
     <div className="hidden h-full border-r border-slate-200 bg-white xl:flex">
       {/* Tool Icons Rail */}
-      <nav className="w-16 border-r border-slate-200 flex flex-col items-center py-4 gap-4 bg-slate-900 text-slate-400">
+      <nav className="flex w-16 flex-col items-center gap-4 border-r border-slate-200 bg-slate-900 py-4 text-slate-400">
         {tools.map((tool) => {
           const Icon = tool.icon;
           const isActive = activeTool === tool.id;
@@ -154,6 +155,7 @@ export default function Sidebar({
             </button>
           );
         })}
+        <div className="mt-auto pt-4"><AuthPanel compact /></div>
       </nav>
 
       {/* Dynamic Sub-panel */}

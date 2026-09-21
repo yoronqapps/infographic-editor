@@ -83,6 +83,7 @@ function EditorApp() {
     zoom,
     setCanvasZoom,
     fitCanvasToViewport,
+    fitCanvasToSelection,
     toggleSelectedVisibility,
     moveSelectedLayer,
     updateSelectedStroke,
@@ -125,6 +126,10 @@ function EditorApp() {
     isEditingPoints,
     togglePointEditing,
     clipSelectedImageToShape,
+    guides,
+    addGuide,
+    updateGuide,
+    removeGuide,
   } = useFabric(600, 800);
 
   useEffect(() => {
@@ -560,7 +565,20 @@ function EditorApp() {
           onInsertComponent={insertComponent}
         />}
 
-        <CanvasArea canvasRef={canvasRef} zoom={zoom} onZoomChange={setCanvasZoom} onFitToViewport={() => fitCanvasToViewport(window.innerWidth - 560, window.innerHeight - 120)} panMode={panMode} onTogglePan={togglePanMode} />
+        <CanvasArea
+          canvasRef={canvasRef}
+          zoom={zoom}
+          onZoomChange={setCanvasZoom}
+          onFitToViewport={(mode) => fitCanvasToViewport(window.innerWidth - 560, window.innerHeight - 120, mode)}
+          onFitSelection={() => fitCanvasToSelection(window.innerWidth - 560, window.innerHeight - 120)}
+          hasSelection={selectionContext.hasSelection}
+          panMode={panMode}
+          onTogglePan={togglePanMode}
+          guides={guides}
+          onAddGuide={addGuide}
+          onUpdateGuide={updateGuide}
+          onRemoveGuide={removeGuide}
+        />
 
         {!presentationMode && !sharedView && <StyleEditor
           selectedObject={selectedObject}

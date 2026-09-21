@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import * as fabric from 'fabric';
 import { recognizeTextLines } from '../services/ocrService';
-import type { ChartDatum, ChartKind, SelectionContext } from '../types/editor';
+import type { ChartDatum, ChartKind, EditorGuide, SelectionContext } from '../types/editor';
 import { shouldStartCanvasPan } from '../lib/canvasPan';
 import { createCommandHistory, type CommandHistory } from '../lib/commandHistory';
+import { calculateFitZoom, clampZoom, type FitMode } from '../lib/canvasViewport';
 
 export const useFabric = (width: number, height: number) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -20,6 +21,7 @@ export const useFabric = (width: number, height: number) => {
   const [isDrawingFreehand, setIsDrawingFreehand] = useState(false);
   const [panMode, setPanMode] = useState(false);
   const [isEditingPoints, setIsEditingPoints] = useState(false);
+  const [guides, setGuides] = useState<EditorGuide[]>([]);
   const [ocrStatus, setOcrStatus] = useState('');
   const history = useRef<CommandHistory<ReturnType<fabric.Canvas['toJSON']>> | null>(null);
   const restoringHistory = useRef(false);
@@ -230,6 +232,18 @@ export const useFabric = (width: number, height: number) => {
   }, []);
 
   const togglePanMode = useCallback(() => setPanMode((current) => !current), []);
+
+  const addGuide = useCallback((axis: EditorGuide['axis'], position: number) => {
+    setGuides((current) => [...current, { id: `${axis}-${Date.now()}`, axis, position }]);
+  }, []);
+
+  const updateGuide = useCallback((id: string, position: number) => {
+    setGuides((current) => current.map((guide) => guide.id === id ? { ...guide, position } : guide));
+  }, []);
+
+  const removeGuide = useCallback((id: string) => {
+    setGuides((current) => current.filter((guide) => guide.id !== id));
+  }, []);
 
   const nudgeSelected = useCallback((deltaX: number, deltaY: number) => {
     if (!fabricCanvas || !selectedObject || selectedObject.selectable === false) return;
@@ -915,16 +929,22 @@ export const useFabric = (width: number, height: number) => {
 
   const setCanvasZoom = useCallback((nextZoom: number) => {
     if (!fabricCanvas) return;
-    const safeZoom = Math.min(2, Math.max(0.25, nextZoom));
+    const safeZoom = clampZoom(nextZoom);
     fabricCanvas.setZoom(safeZoom);
     setZoom(safeZoom);
   }, [fabricCanvas]);
 
-  const fitCanvasToViewport = useCallback((viewportWidth: number, viewportHeight: number) => {
+  const fitCanvasToViewport = useCallback((viewportWidth: number, viewportHeight: number, mode: FitMode = 'page') => {
     if (!fabricCanvas) return;
-    const nextZoom = Math.min((viewportWidth - 80) / fabricCanvas.getWidth(), (viewportHeight - 80) / fabricCanvas.getHeight(), 1);
+    const nextZoom = calculateFitZoom(mode, fabricCanvas.getWidth(), fabricCanvas.getHeight(), viewportWidth - 80, viewportHeight - 80);
     setCanvasZoom(nextZoom);
   }, [fabricCanvas, setCanvasZoom]);
+
+  const fitCanvasToSelection = useCallback((viewportWidth: number, viewportHeight: number) => {
+    if (!fabricCanvas || !selectedObject) return;
+    const nextZoom = calculateFitZoom('page', selectedObject.getScaledWidth(), selectedObject.getScaledHeight(), viewportWidth - 80, viewportHeight - 80);
+    setCanvasZoom(nextZoom);
+  }, [fabricCanvas, selectedObject, setCanvasZoom]);
 
   const toggleSelectedVisibility = useCallback(() => {
     if (!fabricCanvas || !selectedObject) return;
@@ -1262,6 +1282,7 @@ export const useFabric = (width: number, height: number) => {
     zoom,
     setCanvasZoom,
     fitCanvasToViewport,
+    fitCanvasToSelection,
     toggleSelectedVisibility,
     moveSelectedLayer,
     setSelectedLayerOrder,
@@ -1288,6 +1309,10 @@ export const useFabric = (width: number, height: number) => {
     toggleSnap,
     panMode,
     togglePanMode,
+    guides,
+    addGuide,
+    updateGuide,
+    removeGuide,
     nudgeSelected,
     groupSelected,
     ungroupSelected,

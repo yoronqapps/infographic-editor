@@ -2,7 +2,6 @@ import { useRef } from 'react';
 import { Download, Trash2, Undo2, Redo2, Save, FolderOpen, Library, History, Share2, Copy, Group, Ungroup, FileJson, Upload, Plus, Presentation } from 'lucide-react';
 import jsPDF from 'jspdf';
 import * as fabric from 'fabric';
-import AuthPanel from './AuthPanel';
 
 interface HeaderProps {
   pages: Array<{ id: number; name: string; thumbnail?: string }>;
@@ -118,14 +117,14 @@ export default function Header({ pages, activePageId, onSwitchPage, onAddPage, o
   }
 
   return (
-    <header className="flex flex-col gap-2 overflow-hidden bg-slate-900 px-4 py-2 text-white shadow-md sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:gap-4 lg:py-3">
+    <header className="relative flex flex-col gap-2 overflow-visible bg-slate-900 px-4 py-2 text-white shadow-md sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:gap-4 lg:py-3">
       <div className="flex min-w-0 w-full items-center gap-3 overflow-x-auto pb-1 lg:w-auto lg:overflow-visible lg:pb-0">
         <h1 className="text-lg font-bold tracking-wide text-blue-400">
           Infographic<span className="text-white">Studio</span>
         </h1>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex w-full flex-wrap items-center gap-2 lg:flex-1 lg:justify-end">
         <div className="flex max-w-[260px] items-center gap-1 overflow-x-auto rounded-lg border border-slate-700 bg-slate-800 p-1">
           {pages.map((page) => (
             <button key={page.id} onClick={() => onSwitchPage(page.id)} onDoubleClick={() => onRenamePage(page.id)} title="Double-click to rename" className={`flex shrink-0 items-center gap-1 rounded px-2 py-1 text-[10px] ${page.id === activePageId ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-700'}`}>
@@ -185,45 +184,17 @@ export default function Header({ pages, activePageId, onSwitchPage, onAddPage, o
         <button onClick={() => importInputRef.current?.click()} title="Import editable project" className="p-2 rounded hover:bg-slate-800"><Upload className="w-4 h-4" /></button>
         <input ref={importInputRef} type="file" accept="application/json" onChange={importJSON} className="hidden" />
 
-        <div className="h-4 w-px bg-slate-700" />
-
-        <AuthPanel />
-
-        <div className="h-4 w-px bg-slate-700" />
-
-        <button
-          onClick={exportPNG}
-          className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition"
-        >
-          <Download className="w-3.5 h-3.5" /> PNG
-        </button>
-
-        <button onClick={exportJPG} className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition">
-          <Download className="w-3.5 h-3.5" /> JPG
-        </button>
-        <button onClick={exportTransparentPNG} title="Transparent PNG" className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition">
-          <Download className="w-3.5 h-3.5" /> PNG clear
-        </button>
-
-        <button
-          onClick={exportSVG}
-          className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition"
-        >
-          <Download className="w-3.5 h-3.5" /> SVG
-        </button>
-
-        <button
-          onClick={exportPDF}
-          className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg text-xs font-medium transition shadow"
-        >
-          <Download className="w-3.5 h-3.5" /> Export PDF
-        </button>
-        <button
-          onClick={onExportAllPages}
-          className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition"
-        >
-          <Download className="w-3.5 h-3.5" /> All pages
-        </button>
+        <details className="relative">
+          <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-semibold hover:bg-slate-700"><Download className="h-3.5 w-3.5" /> Export</summary>
+          <div className="absolute right-0 top-11 z-50 grid w-44 gap-1 rounded-xl border border-slate-700 bg-slate-900 p-2 shadow-2xl">
+            <button onClick={exportPNG} className="rounded px-3 py-2 text-left text-xs hover:bg-slate-800">PNG</button>
+            <button onClick={exportJPG} className="rounded px-3 py-2 text-left text-xs hover:bg-slate-800">JPG</button>
+            <button onClick={exportTransparentPNG} className="rounded px-3 py-2 text-left text-xs hover:bg-slate-800">Transparent PNG</button>
+            <button onClick={exportSVG} className="rounded px-3 py-2 text-left text-xs hover:bg-slate-800">SVG</button>
+            <button onClick={exportPDF} className="rounded bg-blue-600 px-3 py-2 text-left text-xs font-semibold hover:bg-blue-500">PDF</button>
+            <button onClick={onExportAllPages} className="rounded px-3 py-2 text-left text-xs hover:bg-slate-800">All pages PDF</button>
+          </div>
+        </details>
       </div>
     </header>
   );
