@@ -8,6 +8,7 @@ import CanvasArea from './components/Canvas/CanvasArea';
 import StyleEditor from './components/PropertiesPanel/StyleEditor';
 import ProjectLibrary from './components/ProjectLibrary';
 import VersionHistory from './components/VersionHistory';
+import LandingPage from './components/LandingPage';
 import { decodeSharedDocument, deleteCloudProject, encodeSharedDocument, listProjects, loadCloudProject, loadLocalProject, loadLocalRevisions, saveCloudProject, saveLocalProject, saveLocalRevision, type CloudProjectDocument, type LocalRevision, type ProjectSummary } from './services/projectService';
 import { uploadAsset } from './services/storageService';
 import { isSupabaseConfigured } from './lib/supabase';
@@ -20,6 +21,7 @@ interface EditorPage {
 }
 
 export default function App() {
+  const [showLanding, setShowLanding] = useState(() => !window.location.hash.startsWith('#share='));
   const [activeTool, setActiveTool] = useState<ActiveTool>('select');
   const [projectTitle, setProjectTitle] = useState('Untitled infographic');
   const [saveStatus, setSaveStatus] = useState('Autosave ready');
@@ -121,6 +123,10 @@ export default function App() {
     togglePointEditing,
     clipSelectedImageToShape,
   } = useFabric(600, 800);
+
+  if (showLanding && !sharedView) {
+    return <LandingPage onEnter={() => setShowLanding(false)} />;
+  }
 
   useEffect(() => {
     if (!fabricCanvas || !projectRestored) return;
