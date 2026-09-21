@@ -1,0 +1,63 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Caveat:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Libre+Baskerville:wght@400;700&family=Lora:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Merriweather:wght@400;700;900&family=Montserrat:wght@400;500;600;700;800&family=Oswald:wght@400;500;600;700&family=Pacifico&family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&family=Poppins:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+/* stylelint-disable at-rule-no-unknown */
+@tailwind utilities;
+/* stylelint-enable at-rule-no-unknown */
+
+:root {
+	--forest-950: #051f20;
+	--forest-900: #0b2b26;
+	--forest-800: #163832;
+	--forest-700: #235347;
+	--sage-500: #8eb69b;
+	--mist-100: #daf1de;
+	--mist-50: #f1faf2;
+}
+
+body {
+	background: var(--forest-950);
+	color: var(--forest-950);
+}
+
+/* Keep the existing Tailwind component structure while replacing its default blue/slate theme. */
+.bg-slate-100 { background-color: var(--mist-100) !important; }
+.bg-slate-200 { background-color: var(--forest-800) !important; }
+.bg-slate-50 { background-color: var(--mist-50) !important; }
+.bg-slate-900 { background-color: var(--forest-950) !important; }
+.bg-slate-800 { background-color: var(--forest-900) !important; }
+.bg-slate-700 { background-color: var(--forest-800) !important; }
+.bg-white { background-color: var(--mist-100) !important; }
+
+.text-white { color: var(--mist-100) !important; }
+.text-slate-400, .text-slate-500 { color: var(--sage-500) !important; }
+.text-slate-600 { color: var(--forest-700) !important; }
+.text-slate-700 { color: var(--forest-800) !important; }
+.text-slate-200 { color: var(--mist-100) !important; }
+
+.text-blue-400, .text-blue-500 { color: var(--sage-500) !important; }
+.text-blue-600, .text-blue-700, .text-blue-800 { color: var(--forest-700) !important; }
+.bg-blue-50 { background-color: #e7f5e9 !important; }
+.bg-blue-100 { background-color: #c9e4cf !important; }
+.bg-blue-600 { background-color: var(--forest-700) !important; }
+.bg-blue-700 { background-color: var(--forest-800) !important; }
+.border-blue-100, .border-blue-200 { border-color: var(--sage-500) !important; }
+.border-blue-400, .focus\:border-blue-400:focus, .focus\:border-blue-500:focus { border-color: var(--forest-700) !important; }
+
+.text-emerald-500 { color: var(--sage-500) !important; }
+.text-amber-500, .text-amber-800 { color: var(--forest-700) !important; }
+.bg-amber-50 { background-color: #e7f5e9 !important; }
+.border-amber-200 { border-color: var(--sage-500) !important; }
+
+.border-slate-200, .border-slate-300, .border-slate-700 { border-color: rgba(142, 182, 155, 0.55) !important; }
+.hover\:bg-slate-50:hover { background-color: #e7f5e9 !important; }
+.hover\:bg-slate-700:hover { background-color: var(--forest-700) !important; }
+.hover\:bg-slate-800:hover { background-color: var(--forest-800) !important; }
+.hover\:bg-blue-100:hover { background-color: #c9e4cf !important; }
+.hover\:bg-blue-700:hover { background-color: var(--forest-800) !important; }
+.hover\:border-blue-400:hover { border-color: var(--forest-700) !important; }
+
+.canvas-grid {
+	background-image: linear-gradient(rgba(35, 83, 71, 0.14) 1px, transparent 1px), linear-gradient(90deg, rgba(35, 83, 71, 0.14) 1px, transparent 1px);
+	background-size: 20px 20px;
+}
