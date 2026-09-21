@@ -9,9 +9,10 @@ import StyleEditor from './components/PropertiesPanel/StyleEditor';
 import ProjectLibrary from './components/ProjectLibrary';
 import VersionHistory from './components/VersionHistory';
 import LandingPage from './components/LandingPage';
+import AuthPage from './components/AuthPage';
 import { decodeSharedDocument, deleteCloudProject, encodeSharedDocument, listProjects, loadCloudProject, loadLocalProject, loadLocalRevisions, saveCloudProject, saveLocalProject, saveLocalRevision, type CloudProjectDocument, type LocalRevision, type ProjectSummary } from './services/projectService';
 import { uploadAsset } from './services/storageService';
-import { isSupabaseConfigured } from './lib/supabase';
+import { isSupabaseConfigured, supabase } from './lib/supabase';
 
 interface EditorPage {
   id: number;
@@ -596,7 +597,27 @@ function EditorApp() {
 }
 
 export default function App() {
-  const [showLanding, setShowLanding] = useState(() => !window.location.hash.startsWith('#share='));
-  if (showLanding) return <LandingPage onEnter={() => setShowLanding(false)} />;
+  const isSharedLink = window.location.hash.startsWith('#share=');
+  const [entryScreen, setEntryScreen] = useState<'landing' | 'auth' | 'editor'>(isSharedLink ? 'editor' : 'landing');
+  const [hasSession, setHasSession] = useState(isSharedLink);
+
+  useEffect(() => {
+    if (isSharedLink || !isSupabaseConfigured) return;
+    let active = true;
+    void supabase.auth.getSession().then(({ data }) => {
+      if (!active) return;
+      setHasSession(Boolean(data.session));
+      if (data.session) setEntryScreen('editor');
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!active) return;
+      setHasSession(Boolean(session));
+      if (session) setEntryScreen('editor');
+    });
+    return () => { active = false; subscription.unsubscribe(); };
+  }, [isSharedLink]);
+
+  if (entryScreen === 'landing') return <LandingPage onEnter={() => setEntryScreen('auth')} />;
+  if (entryScreen === 'auth' && !hasSession) return <AuthPage onBack={() => setEntryScreen('landing')} />;
   return <EditorApp />;
 }
