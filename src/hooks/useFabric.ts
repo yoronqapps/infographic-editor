@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import * as fabric from 'fabric';
 import { recognizeTextLines } from '../services/ocrService';
-import type { ChartDatum, ChartKind } from '../types/editor';
+import type { ChartDatum, ChartKind, SelectionContext } from '../types/editor';
+import { shouldStartCanvasPan } from '../lib/canvasPan';
+import { createCommandHistory, type CommandHistory } from '../lib/commandHistory';
 
 export const useFabric = (width: number, height: number) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [fabricCanvas, setFabricCanvas] = useState<fabric.Canvas | null>(null);
   const [selectedObject, setSelectedObject] = useState<fabric.Object | null>(null);
+  const [selectionContext, setSelectionContext] = useState<SelectionContext>({ objects: [], count: 0, hasSelection: false, hasMultipleSelection: false });
   const [, refreshSelection] = useState(0);
   const [backgroundColor, setBackgroundColor] = useState('#ffffff');
   const [canvasSize, setCanvasSize] = useState({ width, height });
@@ -15,13 +18,20 @@ export const useFabric = (width: number, height: number) => {
   const [isDrawingConnector, setIsDrawingConnector] = useState(false);
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [isDrawingFreehand, setIsDrawingFreehand] = useState(false);
+  const [panMode, setPanMode] = useState(false);
   const [isEditingPoints, setIsEditingPoints] = useState(false);
   const [ocrStatus, setOcrStatus] = useState('');
-  const history = useRef<any[]>([]);
-  const historyIndex = useRef(-1);
+  const history = useRef<CommandHistory<ReturnType<fabric.Canvas['toJSON']>> | null>(null);
   const restoringHistory = useRef(false);
   const snapEnabledRef = useRef(true);
   const updateArrowPointRef = useRef<((point: 'start' | 'end' | 'control', x: number, y: number) => void) | null>(null);
+  const panState = useRef({ active: false, lastX: 0, lastY: 0, restoreSelection: true });
+  const panModeRef = useRef(false);
+  const getObjectId = (object: fabric.Object) => (object as fabric.Object & { id?: string }).id ?? object.type;
+
+  useEffect(() => {
+    panModeRef.current = panMode;
+  }, [panMode]);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -50,18 +60,18 @@ export const useFabric = (width: number, height: number) => {
     });
 
     const updateHistoryState = () => {
+      if (!history.current) return;
       setHistoryState({
-        canUndo: historyIndex.current > 0,
-        canRedo: historyIndex.current < history.current.length - 1,
+        canUndo: history.current.canUndo(),
+        canRedo: history.current.canRedo(),
       });
     };
 
     const recordHistory = () => {
       if (restoringHistory.current) return;
       const snapshot = canvas.toJSON();
-      history.current = history.current.slice(0, historyIndex.current + 1);
-      history.current.push(snapshot);
-      historyIndex.current = history.current.length - 1;
+      if (!history.current) history.current = createCommandHistory(snapshot);
+      else history.current.push(snapshot);
       updateHistoryState();
     };
 
@@ -71,11 +81,14 @@ export const useFabric = (width: number, height: number) => {
       if (target) {
         if (target.type === 'group' && (target as any).arrowKind) attachArrowControls(target as fabric.Group);
         setSelectedObject(target);
+        const objects = selectionEvent.selected ?? canvas.getActiveObjects();
+        setSelectionContext({ objects: objects.map(getObjectId), primaryId: getObjectId(target), count: objects.length, hasSelection: true, hasMultipleSelection: objects.length > 1 });
       }
     };
 
     const handleClear = () => {
       setSelectedObject(null);
+      setSelectionContext({ objects: [], count: 0, hasSelection: false, hasMultipleSelection: false });
     };
 
     const handleMoving = (event: fabric.TEvent & { target?: fabric.Object }) => {
@@ -131,6 +144,43 @@ export const useFabric = (width: number, height: number) => {
       context.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
     };
 
+    const handlePanStart = (event: fabric.TPointerEventInfo) => {
+      const pointerEvent = event.e as MouseEvent;
+      if (!shouldStartCanvasPan(pointerEvent.button, panModeRef.current)) return;
+      pointerEvent.preventDefault();
+      panState.current = {
+        active: true,
+        lastX: pointerEvent.clientX,
+        lastY: pointerEvent.clientY,
+        restoreSelection: canvas.selection,
+      };
+      canvas.selection = false;
+      canvas.defaultCursor = 'grabbing';
+      canvas.hoverCursor = 'grabbing';
+    };
+
+    const handlePanMove = (event: fabric.TPointerEventInfo) => {
+      if (!panState.current.active) return;
+      const pointerEvent = event.e as MouseEvent;
+      const deltaX = pointerEvent.clientX - panState.current.lastX;
+      const deltaY = pointerEvent.clientY - panState.current.lastY;
+      const viewportTransform = canvas.viewportTransform;
+      if (!viewportTransform) return;
+      viewportTransform[4] += deltaX;
+      viewportTransform[5] += deltaY;
+      panState.current.lastX = pointerEvent.clientX;
+      panState.current.lastY = pointerEvent.clientY;
+      canvas.requestRenderAll();
+    };
+
+    const handlePanEnd = () => {
+      if (!panState.current.active) return;
+      canvas.selection = panState.current.restoreSelection;
+      panState.current.active = false;
+      canvas.defaultCursor = 'default';
+      canvas.hoverCursor = 'move';
+    };
+
     canvas.on('selection:created', handleSelection as any);
     canvas.on('selection:updated', handleSelection as any);
     canvas.on('selection:cleared', handleClear);
@@ -138,42 +188,48 @@ export const useFabric = (width: number, height: number) => {
     canvas.on('object:modified', recordHistory);
     canvas.on('object:removed', recordHistory);
     canvas.on('object:moving', handleMoving);
+    canvas.on('mouse:down', handlePanStart);
+    canvas.on('mouse:move', handlePanMove);
+    canvas.on('mouse:up', handlePanEnd);
     canvas.on('mouse:up', clearGuides);
 
-    history.current = [canvas.toJSON()];
-    historyIndex.current = 0;
+    history.current = createCommandHistory(canvas.toJSON());
     updateHistoryState();
     setFabricCanvas(canvas);
 
     return () => {
       canvas.dispose();
-      history.current = [];
-      historyIndex.current = -1;
+      history.current = null;
     };
   }, [width, height]);
 
-  const restoreHistory = useCallback(async (index: number) => {
-    if (!fabricCanvas || !history.current[index]) return;
+  const restoreHistory = useCallback(async (snapshot: ReturnType<fabric.Canvas['toJSON']> | undefined) => {
+    if (!fabricCanvas || !snapshot) return;
     restoringHistory.current = true;
-    historyIndex.current = index;
-    await fabricCanvas.loadFromJSON(history.current[index]);
+    await fabricCanvas.loadFromJSON(snapshot);
     fabricCanvas.discardActiveObject();
     fabricCanvas.renderAll();
     setSelectedObject(null);
+    if (!history.current) {
+      restoringHistory.current = false;
+      return;
+    }
     setHistoryState({
-      canUndo: historyIndex.current > 0,
-      canRedo: historyIndex.current < history.current.length - 1,
+      canUndo: history.current.canUndo(),
+      canRedo: history.current.canRedo(),
     });
     restoringHistory.current = false;
   }, [fabricCanvas]);
 
-  const undo = useCallback(() => restoreHistory(historyIndex.current - 1), [restoreHistory]);
-  const redo = useCallback(() => restoreHistory(historyIndex.current + 1), [restoreHistory]);
+  const undo = useCallback(() => restoreHistory(history.current?.undo()), [restoreHistory]);
+  const redo = useCallback(() => restoreHistory(history.current?.redo()), [restoreHistory]);
 
   const toggleSnap = useCallback(() => {
     snapEnabledRef.current = !snapEnabledRef.current;
     setSnapEnabled(snapEnabledRef.current);
   }, []);
+
+  const togglePanMode = useCallback(() => setPanMode((current) => !current), []);
 
   const nudgeSelected = useCallback((deltaX: number, deltaY: number) => {
     if (!fabricCanvas || !selectedObject || selectedObject.selectable === false) return;
@@ -1170,6 +1226,7 @@ export const useFabric = (width: number, height: number) => {
     canvasRef,
     fabricCanvas,
     selectedObject,
+    selectionContext,
     addText,
     addRectangle,
     addRoundedRectangle,
@@ -1229,6 +1286,8 @@ export const useFabric = (width: number, height: number) => {
     canRedo: historyState.canRedo,
     snapEnabled,
     toggleSnap,
+    panMode,
+    togglePanMode,
     nudgeSelected,
     groupSelected,
     ungroupSelected,

@@ -1,24 +1,18 @@
 import { supabase } from '../lib/supabase';
 import * as fabric from 'fabric';
+import { migrateDocument, parseDocument, type EditorDocumentInput } from '../lib/documentSchema';
+import type { EditorDocument, EditorPage } from '../types/editor';
 
 export interface Project {
   id?: string;
   title: string;
-  canvas_state: any;
+  canvas_state: unknown;
   user_id?: string;
 }
 
-export interface LocalProjectPage {
-  id: number;
-  name: string;
-  state: any;
-  thumbnail?: string;
-}
+export type LocalProjectPage = EditorPage;
 
-export interface LocalProjectDocument {
-  title: string;
-  pages: LocalProjectPage[];
-  activePageId: number;
+export interface LocalProjectDocument extends EditorDocument {
   saved_at: string;
 }
 
@@ -42,6 +36,7 @@ export interface LocalRevision {
 const LOCAL_DRAFT_KEY = 'infographic-editor:draft';
 const LOCAL_PROJECT_KEY = 'infographic-editor:project';
 const LOCAL_REVISIONS_KEY = 'infographic-editor:revisions';
+const isRecordWithString = (value: unknown, key: string): value is Record<string, unknown> & Record<typeof key, string> => typeof value === 'object' && value !== null && typeof (value as Record<string, unknown>)[key] === 'string';
 
 export const saveLocalDraft = (title: string, fabricCanvas: fabric.Canvas) => {
   localStorage.setItem(LOCAL_DRAFT_KEY, JSON.stringify({
@@ -51,9 +46,10 @@ export const saveLocalDraft = (title: string, fabricCanvas: fabric.Canvas) => {
   }));
 };
 
-export const saveLocalProject = (document: Omit<LocalProjectDocument, 'saved_at'>) => {
+export const saveLocalProject = (document: EditorDocumentInput) => {
+  const normalized = migrateDocument(document);
   localStorage.setItem(LOCAL_PROJECT_KEY, JSON.stringify({
-    ...document,
+    ...normalized,
     saved_at: new Date().toISOString(),
   } satisfies LocalProjectDocument));
 };
@@ -63,9 +59,10 @@ export const loadLocalProject = (): LocalProjectDocument | null => {
   if (!rawProject) return null;
 
   try {
-    const project = JSON.parse(rawProject) as LocalProjectDocument;
-    if (!project.title || !Array.isArray(project.pages) || project.pages.length === 0) return null;
-    return project;
+    const parsed = JSON.parse(rawProject) as unknown;
+    const project = migrateDocument(parsed);
+    if (!project.title || project.pages.length === 0) return null;
+    return { ...project, saved_at: isRecordWithString(parsed, 'saved_at') ? parsed.saved_at : new Date().toISOString() };
   } catch {
     return null;
   }
@@ -92,14 +89,15 @@ export const loadLocalRevisions = (): LocalRevision[] => {
 };
 
 export const encodeSharedDocument = (document: CloudProjectDocument) => {
-  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(document))));
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(migrateDocument(document)))));
   return encoded.replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
 };
 
 export const decodeSharedDocument = (encoded: string): CloudProjectDocument | null => {
   try {
     const padded = encoded.replaceAll('-', '+').replaceAll('_', '/').padEnd(Math.ceil(encoded.length / 4) * 4, '=');
-    return JSON.parse(decodeURIComponent(escape(atob(padded)))) as CloudProjectDocument;
+    const result = parseDocument(JSON.parse(decodeURIComponent(escape(atob(padded)))));
+    return result.ok ? result.value : null;
   } catch {
     return null;
   }
@@ -198,9 +196,9 @@ export const saveCloudProject = async (document: CloudProjectDocument, projectId
 export const loadCloudProject = async (projectId: string): Promise<CloudProjectDocument> => {
   const { data, error } = await supabase.from('projects').select('canvas_state').eq('id', projectId).single();
   if (error) throw error;
-  const document = data?.canvas_state as CloudProjectDocument | undefined;
-  if (!document?.title || !Array.isArray(document.pages)) throw new Error('This project has an invalid document');
-  return document;
+  const result = parseDocument(data?.canvas_state);
+  if (!result.ok) throw new Error(`This project has an invalid document: ${result.error}`);
+  return result.value;
 };
 
 export const deleteCloudProject = async (projectId: string) => {

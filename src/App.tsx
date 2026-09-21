@@ -47,6 +47,7 @@ function EditorApp() {
     canvasRef,
     fabricCanvas,
     selectedObject,
+    selectionContext,
     addText,
     addRectangle,
     addRoundedRectangle,
@@ -106,6 +107,8 @@ function EditorApp() {
     canRedo,
     snapEnabled,
     toggleSnap,
+    panMode,
+    togglePanMode,
     nudgeSelected,
     groupSelected,
     ungroupSelected,
@@ -203,7 +206,8 @@ function EditorApp() {
       ? { ...page, state: fabricCanvas.toJSON(), thumbnail: fabricCanvas.toDataURL({ format: 'png', multiplier: 0.15 }) }
       : page);
     saveLocalProject({ title: projectTitle, pages: currentPages, activePageId });
-    saveLocalRevision({ title: projectTitle, pages: currentPages, activePageId });
+    const revisionDocument = getCurrentDocument();
+    if (revisionDocument) saveLocalRevision(revisionDocument);
     setRevisions(loadLocalRevisions());
     setSaveStatus(`Saved ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`);
   };
@@ -227,11 +231,15 @@ function EditorApp() {
   const getCurrentDocument = (): CloudProjectDocument | null => {
     if (!fabricCanvas) return null;
     return {
+      version: 1,
       title: projectTitle,
       pages: pages.map((page) => page.id === activePageId
         ? { ...page, state: fabricCanvas.toJSON(), thumbnail: fabricCanvas.toDataURL({ format: 'png', multiplier: 0.15 }) }
         : page),
       activePageId,
+      guides: [],
+      assets: [],
+      animations: [],
     };
   };
 
@@ -472,7 +480,7 @@ function EditorApp() {
       <Header
         fabricCanvas={fabricCanvas}
         onDeleteSelected={deleteSelected}
-        hasSelection={!!selectedObject}
+        hasSelection={selectionContext.hasSelection}
         onUndo={undo}
         onRedo={redo}
         canUndo={canUndo}
@@ -488,7 +496,7 @@ function EditorApp() {
         onDistribute={distributeSelected}
           onAlignMultiple={alignMultiple}
           onDistributeMultiple={distributeMultiple}
-        hasMultipleSelection={Boolean(fabricCanvas && fabricCanvas.getActiveObjects().length > 1)}
+        hasMultipleSelection={selectionContext.hasMultipleSelection}
         pages={pages}
         activePageId={activePageId}
         onSwitchPage={switchPage}
@@ -552,7 +560,7 @@ function EditorApp() {
           onInsertComponent={insertComponent}
         />}
 
-        <CanvasArea canvasRef={canvasRef} zoom={zoom} onZoomChange={setCanvasZoom} onFitToViewport={() => fitCanvasToViewport(window.innerWidth - 560, window.innerHeight - 120)} />
+        <CanvasArea canvasRef={canvasRef} zoom={zoom} onZoomChange={setCanvasZoom} onFitToViewport={() => fitCanvasToViewport(window.innerWidth - 560, window.innerHeight - 120)} panMode={panMode} onTogglePan={togglePanMode} />
 
         {!presentationMode && !sharedView && <StyleEditor
           selectedObject={selectedObject}

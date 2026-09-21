@@ -5,9 +5,11 @@ interface CanvasAreaProps {
   zoom: number;
   onZoomChange: (zoom: number) => void;
   onFitToViewport: () => void;
+  panMode: boolean;
+  onTogglePan: () => void;
 }
 
-export default function CanvasArea({ canvasRef, zoom, onZoomChange, onFitToViewport }: CanvasAreaProps) {
+export default function CanvasArea({ canvasRef, zoom, onZoomChange, onFitToViewport, panMode, onTogglePan }: CanvasAreaProps) {
   const [showGrid, setShowGrid] = useState(false);
   const [showRulers, setShowRulers] = useState(false);
   return (
@@ -17,6 +19,7 @@ export default function CanvasArea({ canvasRef, zoom, onZoomChange, onFitToViewp
         <span className="w-12 text-center text-xs text-slate-600">{Math.round(zoom * 100)}%</span>
         <button onClick={() => onZoomChange(zoom + 0.1)} className="min-h-8 min-w-8 px-2 py-1 text-sm text-slate-700 hover:bg-slate-50">+</button>
         <button onClick={onFitToViewport} className="border-l border-slate-200 px-2 py-1 text-xs text-slate-700 hover:bg-slate-50">Fit</button>
+        <button onClick={onTogglePan} className={`border-l border-slate-200 px-2 py-1 text-xs ${panMode ? 'font-semibold text-slate-900' : 'text-slate-700'} hover:bg-slate-50`}>Pan</button>
         <button onClick={() => setShowGrid((value) => !value)} className={`border-l border-slate-200 px-2 py-1 text-xs ${showGrid ? 'text-slate-900' : 'text-slate-700'} hover:bg-slate-50`}>Grid</button>
         <button onClick={() => setShowRulers((value) => !value)} className={`border-l border-slate-200 px-2 py-1 text-xs ${showRulers ? 'text-slate-900' : 'text-slate-700'} hover:bg-slate-50`}>Rulers</button>
       </div>
