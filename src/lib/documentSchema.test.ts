@@ -22,6 +22,17 @@ describe('parseDocument', () => {
     expect(result).toEqual({ ok: false, error: 'Document version is missing or invalid' });
   });
 
+  it('rejects a document with invalid page state', () => {
+    const result = parseDocument({
+      version: 1,
+      title: 'Broken page',
+      pages: [{ id: 1, name: 'Page 1', state: { objects: 'not-an-array' } }],
+      activePageId: 1,
+    });
+
+    expect(result).toEqual({ ok: false, error: 'One or more pages are invalid' });
+  });
+
   it('migrates a legacy single-canvas project into the current document shape', () => {
     const migrated = migrateDocument({ title: 'Legacy', canvas_state: { objects: [{ type: 'circle' }] } });
 
