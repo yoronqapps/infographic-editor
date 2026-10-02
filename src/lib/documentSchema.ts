@@ -39,6 +39,8 @@ export const parseDocument = (input: unknown): { ok: true; value: EditorDocument
   if (!isRecord(input) || input.version !== 1) return { ok: false, error: 'Document version is missing or invalid' };
   if (typeof input.title !== 'string' || !Array.isArray(input.pages) || input.pages.length === 0) return { ok: false, error: 'Document title or pages are invalid' };
   if (!isFiniteNumber(input.activePageId)) return { ok: false, error: 'Active page is invalid' };
-  if (input.pages.some((page) => !isRecord(page) || !isFiniteNumber(page.id) || typeof page.name !== 'string' || !isRecord(page.state) || !Array.isArray(page.state.objects))) return { ok: false, error: 'One or more pages are invalid' };
+  if (input.pages.some((page) => !isRecord(page) || !isFiniteNumber(page.id) || typeof page.name !== 'string' || !isRecord(page.state) || !Array.isArray(page.state.objects))) {
+    return { ok: false, error: 'One or more pages are invalid' };
+  }
   return { ok: true, value: migrateDocument(input) };
 };
