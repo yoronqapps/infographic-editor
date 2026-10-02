@@ -111,5 +111,36 @@ Use these prompts in Copilot Chat for deeper workflows:
 | `/security-review` | Before a release | Deep security analysis |
 | `/build-fix` | Build/CI failure | Systematic error resolution |
 | `/refactor` | Code maintenance | Dead code cleanup and simplification |
+---
+applyTo: "**"
+---
+
+# Project: Infographic Editor
+
+A web-based, professional infographic editor (Canva/Piktochart-level quality). Users must be able to create any infographic entirely inside the site.
+
+## Stack
+- React + TypeScript (strict) + Vite
+- Tailwind CSS
+- Deployed on Vercel
+- Linting: ESLint + Oxlint
+
+## Architecture rules
+- The document is a typed, serializable, versioned JSON scene graph (pages → objects). The UI renders from it and never holds its own copy of document data.
+- Prefer an SVG-first rendering model so exports stay vector and sharp.
+- All state changes go through commands/actions so undo/redo works for everything.
+- Use Zustand + Immer for state. Use Zod to validate documents, imports, and templates.
+- Charts, tables, and smart blocks are native editable objects, never flattened images.
+- Folder layout: `src/editor/` (engine, commands, history), `src/components/` (UI), `src/features/` (charts, templates, export, assets), `src/lib/` (utils), `src/types/`.
+
+## Project-specific rules
+- No `any`. Explicit types on public functions and component props.
+- Functional components and hooks only. Memoize expensive renders.
+- Accessible by default: keyboard operable, ARIA labels, visible focus, respects reduced motion.
+- Sanitize any imported SVG and validate all uploads.
+- Do not add a dependency without saying why and listing alternatives.
+- Every feature needs loading, empty, and error states.
+- Target 60fps interaction with 500+ objects.
+- Consistent design tokens, dark/light mode, responsive layout.
 
 To use: open Copilot Chat, type `/` and select the prompt from the picker.
